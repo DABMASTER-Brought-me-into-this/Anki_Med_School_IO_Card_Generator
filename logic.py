@@ -467,7 +467,7 @@ def groq_pruning_tool(file_paths, slide_deck_name):
     try:
         chat_completion = client.chat.completions.create(
             messages=[{"role": "user", "content": content_payload}],
-            model="llama-3.2-11b-vision-preview",  # CHANGED: Valid Groq Model
+            model="meta-llama/llama-4-maverick-17b-128e-instruct",  # CHANGED: Valid Groq Model
             temperature=0.0,
             response_format={"type": "json_object"}
         )
