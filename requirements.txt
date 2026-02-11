@@ -1,0 +1,8 @@
+streamlit
+opencv-python-headless
+python-pptx
+groq
+Pillow
+wand
+rapidocr-onnxruntime
+numpy
