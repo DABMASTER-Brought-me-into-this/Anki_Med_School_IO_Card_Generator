@@ -424,12 +424,28 @@ def groq_pruning_tool(file_paths, slide_deck_name):
         {
             "type": "text",
             "text": f"""
-            You are a rigorous Medical Slide Deck Cleaner. 
-            Context: These images are from a lecture deck named "{slide_deck_name}".
-            Your Task: Review each image and assign it one of two statuses: 'Delete' or 'Pass'.
-            ... [Original Prompt Kept Intact] ...
-            Return ONLY a valid JSON object.
-            """
+                You are a rigorous Medical Slide Deck Cleaner. 
+                Context: These images are from a lecture deck named "{slide_deck_name}".
+
+                Your Task: Review each image and assign it one of two statuses: 'Delete' or 'Pass'.
+
+                CRITERIA FOR 'Delete' (Be aggressive):
+                1. Irrelevant: Comic strips, cartoons, "Questions?" slides, "Thank You" slides, or generic stock photos of people.
+                2. Duplicates: If two images IN THIS LIST are effectively the same content, mark the lower-quality one as Delete.
+                3. Nonsense: The image is too blurry to read, contains only a slide number/header, or is a corrupted visual artifact.
+                4. Formatting Artifacts: Images that are just lines, background textures, or company logos.
+
+                CRITERIA FOR 'Pass':
+                1. Medical Content: Contains anatomy, histology, charts, text definitions, or clinical photos.
+
+                Return ONLY a valid JSON object.
+                Example format:
+                {{
+                    "image1.png": "Pass",
+                    "image2.png": "Delete",
+                    "image3.png": "Delete"
+                }}
+                """
         }
     ]
 
