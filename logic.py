@@ -12,7 +12,6 @@ import re
 import glob
 from PIL import Image
 from itertools import combinations
-import shutil
 import pptx
 from pptx.enum.shapes import MSO_SHAPE_TYPE
 import io
@@ -21,8 +20,7 @@ from wand.color import Color
 import csv
 
 
-# --- PART 1: FUNCTIONS (From AnkiCardGenerator_Function_V2) ---
-
+# Functions
 def io_generate(input_filename, output_filename, results):
     pathway = f"image{input_filename}.png"
 
@@ -31,9 +29,8 @@ def io_generate(input_filename, output_filename, results):
 
     count = output_filename
     for result in results:
-        # Cords & Text
+        # Cords
         cords = result[0]
-        text = result[1]
 
         # Reshaping Cords to Numpy Array
         all_text_points = np.array(cords, dtype=np.int32)
@@ -100,8 +97,8 @@ def standard_generate(input_filename, output_filename, slide_text):
 def groq_preprocessing_tool(similar_image_group, slide_deck_name):
     """
     Preprocessing tool.
-    Receives a list of IMAGES THAT ARE ALREADY CONFIRMED TO BE VISUALLY SIMILAR.
-    Decides which image(s) to 'keep' and which to 'delete'.
+    Receives a list of Images similar to each other.
+    Chooses which to prune or not prune.
     """
 
     # Connecting To Groq
@@ -251,8 +248,7 @@ def pre_processing_prune(slide_deck_name):
         # Removing the Image
         try:
             if bad_card:
-                # CHANGED: Relative path for cloud compatibility
-                shutil.move(image, os.path.join(os.getcwd(), "Criteria1"))
+                os.remove(image)
         except FileNotFoundError:
             print("Error 2: File Not Found")
 
@@ -292,7 +288,7 @@ def pre_processing_prune(slide_deck_name):
     for orphan in orphans_to_delete:
         try:
             # CHANGED: Relative path
-            shutil.move(orphan, os.path.join(os.getcwd(), "Criteria2"))
+            os.remove(orphan)
         except Exception as e:
             print(e)
 
@@ -379,11 +375,9 @@ def post_processing_prune(slide_deck_name):
             # Removing the card
             try:
                 if bad_card:
-                    # CHANGED: Relative paths
-                    shutil.move(file, os.path.join(os.getcwd(), "Criteria3"))
+                    os.remove(file)
                     number = file.strip("answer").strip(".txt")
-                    shutil.move(f"covered_image{number}.png",
-                                os.path.join(os.getcwd(), "Criteria3"))
+                    os.remove(f"covered_image{number}.png")
             except FileNotFoundError:
                 print("Error 2: File Not Found")
         except Exception as e:
@@ -411,9 +405,9 @@ def post_processing_prune(slide_deck_name):
     for key, value in pruning_decisions.items():
         if value == "Delete":
             # CHANGED: Relative paths
-            shutil.move(key, os.path.join(os.getcwd(), "Criteria4"))
+            os.remove(key)
             number = key.strip("covered_image").strip(".png")
-            shutil.move(f"answer{number}.txt", os.path.join(os.getcwd(), "Criteria4"))
+            os.remove(f"answer{number}.txt")
 
 
 def groq_pruning_tool(file_paths, slide_deck_name):
@@ -467,7 +461,7 @@ def groq_pruning_tool(file_paths, slide_deck_name):
     try:
         chat_completion = client.chat.completions.create(
             messages=[{"role": "user", "content": content_payload}],
-            model="meta-llama/llama-4-maverick-17b-128e-instruct",  # CHANGED: Valid Groq Model
+            model="llama-3.2-11b-vision-preview",  # CHANGED: Valid Groq Model
             temperature=0.0,
             response_format={"type": "json_object"}
         )
@@ -493,14 +487,9 @@ def groq_pruning_tool(file_paths, slide_deck_name):
         return {name: "Pass" for name in valid_filenames}
 
 
-# --- PART 2: MAIN PIPELINE (Adapted from Slide_To_Text) ---
+# Slide to Text
 
 def run_pipeline(presentation_name, start_counter):
-    # Making Folders for Errors (Relative Paths)
-    for x in range(1, 5, 1):
-        newpath = os.path.join(os.getcwd(), f'Criteria{x}')
-        if not os.path.exists(newpath):
-            os.makedirs(newpath)
 
     # Tracking Time
     start_time = time.perf_counter()
@@ -568,12 +557,12 @@ def run_pipeline(presentation_name, start_counter):
     ocr_engine = RapidOCR()
 
     # Looping Through Every Image
-    counter = int(start_counter)  # Use the passed argument
+    counter = int(start_counter)
 
     for image in image_list:
         results, elapse = ocr_engine(image)
 
-        # DEFAULT TO STANDARD (Assume it's just a picture until proven otherwise)
+        # Default Standard Card
         is_valid_io_card = False
 
         if results:
@@ -582,7 +571,7 @@ def run_pipeline(presentation_name, start_counter):
                 text = detection[1]
                 confidence = detection[2]
 
-                # CHECK: Has letters (A-Z) AND Confidence > 60%
+                # Has letters (A-Z) AND Confidence > 60%
                 if re.search('[a-zA-Z]', text) and confidence > 0.6:
                     is_valid_io_card = True
                     break
@@ -611,7 +600,7 @@ def run_pipeline(presentation_name, start_counter):
     print(f"The code took {time.perf_counter() - start_time} seconds.")
 
 
-# --- PART 3: FORMATTING (Adapted from Formatting) ---
+# Formatting
 
 def create_csv_file(csv_name):
     # Gather Files
