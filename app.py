@@ -3,17 +3,18 @@ import streamlit as st
 import os
 import tempfile
 import shutil
-import logic  # Importing your consolidated logic file
+import logic
 
+print("Code Running")
 st.title("MedSchool IO Card Anki Generator")
 
-# 1. Inputs
+# Inputs
 api_key = st.text_input("Groq API Key", type="password")
 uploaded_file = st.file_uploader("Upload Presentation", type=["pptx"])
 start_counter = st.number_input("Last Image # (Start Counter)", value=0, min_value=0)
 csv_name = st.text_input("Desired CSV Name", value="deck")
 
-# 2. Execution
+# Execution
 if uploaded_file and api_key and st.button("Generate Deck"):
 
     # Set the API Key for the logic file to use
@@ -28,16 +29,15 @@ if uploaded_file and api_key and st.button("Generate Deck"):
             with open(temp_path, "wb") as f:
                 f.write(uploaded_file.getbuffer())
 
-            # CRITICAL: Switch working directory to the temp folder
             # This makes all the glob.glob("image*.png") calls work locally
             original_dir = os.getcwd()
             os.chdir(temp_dir)
 
             try:
-                # Run the Pipeline (Your Logic)
+                # Run the Pipeline
                 logic.run_pipeline(uploaded_file.name, start_counter)
 
-                # Run the Formatting (Your Logic)
+                # Run the Formatting
                 final_csv = logic.create_csv_file(csv_name)
 
                 # Zip Everything for Download
