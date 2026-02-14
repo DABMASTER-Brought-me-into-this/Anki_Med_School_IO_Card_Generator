@@ -461,7 +461,7 @@ def groq_pruning_tool(file_paths, slide_deck_name):
     try:
         chat_completion = client.chat.completions.create(
             messages=[{"role": "user", "content": content_payload}],
-            model="llama-3.2-11b-vision-preview",  # CHANGED: Valid Groq Model
+            model="meta-llama/llama-4-maverick-17b-128e-instruct",
             temperature=0.0,
             response_format={"type": "json_object"}
         )
@@ -488,9 +488,8 @@ def groq_pruning_tool(file_paths, slide_deck_name):
 
 
 # Slide to Text
-
 def run_pipeline(presentation_name, start_counter):
-
+    print("Starting Code")
     # Tracking Time
     start_time = time.perf_counter()
 
@@ -502,18 +501,22 @@ def run_pipeline(presentation_name, start_counter):
     counter = 0
     slide_texts = {}
 
+    print("Reading Slides")
     # Loop Through Every Slides
     for slide in slides:
         # Loop Through Every Shape
+        print("Finding Shapes in new Slide")
         for shape in slide.shapes:
             # Check if Shape is Image
             if shape.shape_type == MSO_SHAPE_TYPE.PICTURE:
+                print("Found Image")
                 # Saving the Image
                 im = shape.image
                 im_byte = im.blob
                 im_filename = f'image{counter}.png'
                 im_stream = io.BytesIO(im_byte)
 
+                print("Storing Image")
                 # Convert Image to .png
                 try:
                     # Check if it is a goofy file type
@@ -530,6 +533,8 @@ def run_pipeline(presentation_name, start_counter):
                     # Allow for Directory to Adjust for new Image
                     time.sleep(1)
 
+
+                    print("Storing Text")
                     # Get all slide text
                     slide_text = ""
                     # Go through all shapes
@@ -546,6 +551,8 @@ def run_pipeline(presentation_name, start_counter):
                     print("Error 222: Bad File Type")
                 counter += 1
 
+
+    print("Pre-processing")
     # Conduct Pre-processing
     pre_processing_prune(presentation_name)
 
@@ -553,12 +560,14 @@ def run_pipeline(presentation_name, start_counter):
     image_list = glob.glob("image*.png")
     image_list.sort(key=lambda f: int(re.search(r'\d+', f).group()))
 
+    print("Loading OCR")
     # Loading AI Model
     ocr_engine = RapidOCR()
 
     # Looping Through Every Image
     counter = int(start_counter)
 
+    print("Running OCR on All Images")
     for image in image_list:
         results, elapse = ocr_engine(image)
 
@@ -577,15 +586,18 @@ def run_pipeline(presentation_name, start_counter):
                     break
 
         if is_valid_io_card:
+            print("Creating IO Card...")
             # It has real text -> Make IO Card
             counter = io_generate(int(image.strip("image").strip(".png")), counter, results)
         else:
+            print("Creating Standard Card...")
             # It's empty -> Make Standard Card
             counter = standard_generate(int(image.strip("image").strip(".png")), counter, slide_texts[image])
 
     # Locating All Files w/ image*
     files = glob.glob("image*.png")
 
+    print("Pruning Orphan Files")
     for file_path in files:
         # Extra safety check: Ensure we don't accidentally delete the final cards
         if not file_path.startswith("covered_"):
@@ -595,13 +607,14 @@ def run_pipeline(presentation_name, start_counter):
             except Exception as e:
                 print(f"Could not delete {file_path}: {e}")
 
+    print("Post Processing")
     post_processing_prune(presentation_name)
 
-    print(f"The code took {time.perf_counter() - start_time} seconds.")
+    print(f"The slide_to_text took {time.perf_counter() - start_time} seconds.")
 
 
+print("Formatting")
 # Formatting
-
 def create_csv_file(csv_name):
     # Gather Files
     answer_files = glob.glob("answer*.txt")
