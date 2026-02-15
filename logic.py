@@ -21,7 +21,7 @@ import csv
 
 
 # Functions
-def io_generate(input_filename, output_filename, results):
+def io_generate(input_filename, output_filename, results, temp_dir):
     pathway = f"image{input_filename}.png"
 
     # Allow CV2 to load it
@@ -47,7 +47,7 @@ def io_generate(input_filename, output_filename, results):
             2  # Font Thickness
         )
 
-        cv2.imwrite(f'covered_image{count}.png', image)
+        cv2.imwrite(os.path.join(temp_dir, f'covered_image{count}.png'), image)
         print("Text covered successfully.")
 
     # Give Time For Directory Adjust
@@ -71,7 +71,7 @@ def io_generate(input_filename, output_filename, results):
         all_text_points = all_text_points.reshape((-1, 1, 2))
 
         cv2.fillPoly(current_card, [all_text_points], color=(0, 255, 0))
-        cv2.imwrite(f'covered_image{count}.png', current_card)
+        cv2.imwrite(os.path.join(temp_dir, f'covered_image{count}.png'), image)
         print("Text covered successfully.")
 
         count += 1
@@ -79,10 +79,10 @@ def io_generate(input_filename, output_filename, results):
     return count
 
 
-def standard_generate(input_filename, output_filename, slide_text):
+def standard_generate(input_filename, output_filename, slide_text, temp_dir):
     try:
         # Renaming Image to Final Image
-        os.rename(f"image{input_filename}.png", f"covered_image{output_filename}.png")
+        os.rename(os.path.join(temp_dir, f"image{input_filename}.png"), os.path.join(temp_dir, f"covered_image{output_filename}.png"))
 
         # Creating Answer File
         with open(f"answer{output_filename}.txt", 'a') as file:
@@ -222,9 +222,10 @@ def similarity_images(image1, image2):
         return False
 
 
-def pre_processing_prune(slide_deck_name):
+def pre_processing_prune(slide_deck_name, temp_dir):
     # Ascertaining All Files
-    image_files = glob.glob("image*.png")
+    search_pattern = os.path.join(temp_dir, "image*.png")
+    image_files = glob.glob(search_pattern)
     image_files.sort(key=lambda f: int(re.search(r'\d+', f).group()))
 
     # Deleting All Small or Funky Images
@@ -254,7 +255,7 @@ def pre_processing_prune(slide_deck_name):
 
     # Now Beginning Duplication Pruning
     # Ascertaining All Files
-    image_files = glob.glob("image*.png")
+    image_files = glob.glob(search_pattern)
     image_files.sort(key=lambda f: int(re.search(r'\d+', f).group()))
 
     # Batch Process Similar Images
@@ -287,17 +288,18 @@ def pre_processing_prune(slide_deck_name):
 
     for orphan in orphans_to_delete:
         try:
-            # CHANGED: Relative path
             os.remove(orphan)
         except Exception as e:
             print(e)
 
 
-def post_processing_prune(slide_deck_name):
+def post_processing_prune(slide_deck_name, temp_dir):
     # Ascertaining All Files
-    answer_files = glob.glob("answer*.txt")
+    search_pattern = os.path.join(temp_dir, "answer*.txt")
+    answer_files = glob.glob(search_pattern)
     answer_files.sort(key=lambda f: int(re.search(r'\d+', f).group()))
-    covered_image_files = glob.glob("covered_image*.png")
+    search_pattern = os.path.join(temp_dir, "covered_image*.png")
+    covered_image_files = glob.glob(search_pattern)
     covered_image_files.sort(key=lambda f: int(re.search(r'\d+', f).group()))
 
     # Removing Text w/ Keywords or Phrases
@@ -384,7 +386,7 @@ def post_processing_prune(slide_deck_name):
             print(e)
 
     # Ascertaining Remaining Images Post 2 Prunes
-    final_image_list = glob.glob("covered_image*.png")
+    final_image_list = glob.glob(search_pattern)
 
     # AI Pruning
     pruning_decisions = {}
@@ -506,7 +508,7 @@ def groq_pruning_tool(file_paths, slide_deck_name):
 
 
 # Slide to Text
-def run_pipeline(presentation_name, start_counter):
+def run_pipeline(presentation_name, start_counter, temp_dir):
     print("Starting Code")
     # Tracking Time
     start_time = time.perf_counter()
@@ -531,7 +533,7 @@ def run_pipeline(presentation_name, start_counter):
                 # Saving the Image
                 im = shape.image
                 im_byte = im.blob
-                im_filename = f'image{counter}.png'
+                im_filename = os.path.join(temp_dir, f'image{counter}.png')
                 im_stream = io.BytesIO(im_byte)
 
                 print("Storing Image")
@@ -572,10 +574,11 @@ def run_pipeline(presentation_name, start_counter):
 
     print("Pre-processing")
     # Conduct Pre-processing
-    pre_processing_prune(presentation_name)
+    pre_processing_prune(presentation_name, temp_dir)
 
     # Get Remaining Images
-    image_list = glob.glob("image*.png")
+    search_pattern = os.path.join(temp_dir, "image*.png")
+    image_list = glob.glob(search_pattern)
     image_list.sort(key=lambda f: int(re.search(r'\d+', f).group()))
 
     print("Loading OCR")
@@ -606,14 +609,14 @@ def run_pipeline(presentation_name, start_counter):
         if is_valid_io_card:
             print("Creating IO Card...")
             # It has real text -> Make IO Card
-            counter = io_generate(int(image.strip("image").strip(".png")), counter, results)
+            counter = io_generate(int(image.strip("image").strip(".png")), counter, results, temp_dir)
         else:
             print("Creating Standard Card...")
             # It's empty -> Make Standard Card
-            counter = standard_generate(int(image.strip("image").strip(".png")), counter, slide_texts[image])
+            counter = standard_generate(int(image.strip("image").strip(".png")), counter, slide_texts[image], temp_dir)
 
     # Locating All Files w/ image*
-    files = glob.glob("image*.png")
+    files = glob.glob(search_pattern)
 
     print("Pruning Orphan Files")
     for file_path in files:
@@ -626,19 +629,21 @@ def run_pipeline(presentation_name, start_counter):
                 print(f"Could not delete {file_path}: {e}")
 
     print("Post Processing")
-    post_processing_prune(presentation_name)
+    post_processing_prune(presentation_name, temp_dir)
 
     print(f"The slide_to_text took {time.perf_counter() - start_time} seconds.")
 
 
 # Formatting
-def create_csv_file(csv_name):
+def create_csv_file(csv_name, temp_dir):
     print("Formatting")
     # Gather Files
-    answer_files = glob.glob("answer*.txt")
+    search_pattern = os.path.join(temp_dir, "answer*.txt")
+    answer_files = glob.glob(search_pattern)
     answer_files.sort(key=lambda f: int(re.search(r'\d+', f).group()))
 
-    image_files = glob.glob("covered_image*.png")
+    search_pattern = os.path.join(temp_dir, "covered_image*.png")
+    image_files = glob.glob(search_pattern)
     image_files.sort(key=lambda f: int(re.search(r'\d+', f).group()))
 
     # Retrieving the IDs
@@ -678,7 +683,7 @@ def create_csv_file(csv_name):
         csv_name += ".csv"
 
     if csv_rows:
-        with open(csv_name, 'w', newline='', encoding='utf-8') as csvfile:
+        with open(os.path.join(temp_dir, csv_name), 'w', newline='', encoding='utf-8') as csvfile:
             writer = csv.writer(csvfile)
             writer.writerows(csv_rows)
         return csv_name
