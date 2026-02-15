@@ -134,8 +134,8 @@ def groq_preprocessing_tool(similar_image_group, slide_deck_name):
             Return ONLY a valid JSON object mapping filenames to 'keep' or 'delete'.
             Example format:
             {{
-                "image1.png": "keep",
-                "image2.png": "delete"
+                "covered_image1.png": "keep",
+                "covered_image2.png": "delete"
             }}
             """
         }
@@ -404,10 +404,12 @@ def post_processing_prune(slide_deck_name):
     # Deleting Orphans
     for key, value in pruning_decisions.items():
         if value == "Delete":
-            # CHANGED: Relative paths
-            os.remove(key)
-            number = key.strip("covered_image").strip(".png")
-            os.remove(f"answer{number}.txt")
+            try:
+                os.remove(key)
+                number = key.strip("covered_image").strip(".png")
+                os.remove(f"answer{number}.txt")
+            except FileNotFoundError:
+                print("Error 222: Bad File Type")
 
 
 def groq_pruning_tool(file_paths, slide_deck_name):
@@ -629,9 +631,9 @@ def run_pipeline(presentation_name, start_counter):
     print(f"The slide_to_text took {time.perf_counter() - start_time} seconds.")
 
 
-print("Formatting")
 # Formatting
 def create_csv_file(csv_name):
+    print("Formatting")
     # Gather Files
     answer_files = glob.glob("answer*.txt")
     answer_files.sort(key=lambda f: int(re.search(r'\d+', f).group()))
