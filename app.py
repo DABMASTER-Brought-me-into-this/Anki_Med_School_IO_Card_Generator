@@ -29,16 +29,12 @@ if uploaded_file and api_key and st.button("Generate Deck"):
             with open(temp_path, "wb") as f:
                 f.write(uploaded_file.getbuffer())
 
-            # This makes all the glob.glob("image*.png") calls work locally
-            original_dir = os.getcwd()
-            os.chdir(temp_dir)
-
             try:
                 # Run the Pipeline
-                logic.run_pipeline(uploaded_file.name, start_counter)
+                logic.run_pipeline(uploaded_file.name, start_counter, temp_dir)
 
                 # Run the Formatting
-                final_csv = logic.create_csv_file(csv_name)
+                final_csv = logic.create_csv_file(csv_name, temp_dir)
 
                 # Zip Everything for Download
                 if final_csv:
@@ -57,6 +53,3 @@ if uploaded_file and api_key and st.button("Generate Deck"):
 
             except Exception as e:
                 st.error(f"An error occurred: {e}")
-            finally:
-                # Always return to the original directory
-                os.chdir(original_dir)
