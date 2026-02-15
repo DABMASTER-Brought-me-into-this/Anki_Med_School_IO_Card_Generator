@@ -608,12 +608,12 @@ def run_pipeline(presentation_name, start_counter, temp_dir):
 
         if is_valid_io_card:
             print("Creating IO Card...")
-            # It has real text -> Make IO Card
-            counter = io_generate(int(image.strip("image").strip(".png")), counter, results, temp_dir)
+            num_str = re.search(r'\d+', os.path.basename(image)).group()
+            counter = io_generate(int(num_str), counter, results, temp_dir)
         else:
             print("Creating Standard Card...")
-            # It's empty -> Make Standard Card
-            counter = standard_generate(int(image.strip("image").strip(".png")), counter, slide_texts[image], temp_dir)
+            num_str = re.search(r'\d+', os.path.basename(image)).group()
+            counter = standard_generate(int(num_str), counter, slide_texts[image], temp_dir)
 
     # Locating All Files w/ image*
     files = glob.glob(search_pattern)
