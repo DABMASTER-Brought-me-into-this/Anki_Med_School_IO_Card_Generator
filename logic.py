@@ -514,7 +514,7 @@ def run_pipeline(presentation_name, start_counter, temp_dir):
     start_time = time.perf_counter()
 
     # Accessing Presentation
-    prs = pptx.Presentation(presentation_name)
+    prs = pptx.Presentation(os.path.join(temp_dir, presentation_name))
     slides = prs.slides
 
     # Getting All Slide Texts
