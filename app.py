@@ -62,40 +62,32 @@ with st.expander("How to import this into Anki?"):
     2. If your file does not contain one of those items, refresh the website and recreate your zip file. 
     3. Select all the images in the folder, and press 
     
-    
-     Mac: 'command + x'
+        Mac: 'command + x'
      
-     
-     Windows/Linux: 'control + x'  
+        Windows/Linux: 'control + x'  
     4. In your files, locate the Anki App
     5. Locate the media folder within your Anki App. It is likely stored in these file locations: 
     
-    
-     Windows: '%APPDATA%\Anki2\<Your Profile Name>\collection.media' 
+        Windows: '%APPDATA%\Anki2\<Your Profile Name>\collection.media' 
      
+        Mac: '~/Library/Application Support/Anki2/<Your Profile Name>/collection.media' 
      
-     Mac: '~/Library/Application Support/Anki2/<Your Profile Name>/collection.media' 
-     
-     
-     Linux: '~/.local/share/Anki2/<Your Profile Name>/collection.media' 
-     
+        Linux: '~/.local/share/Anki2/<Your Profile Name>/collection.media' 
      
     If you did not create a profile name, the <Your Profile Name> is likely User 1
+    
     6. Press 
     
-    
-     Mac: 'command + v' 
+        Mac: 'command + v' 
      
      
-     Windows/Linux: 'control + v'
+        Windows/Linux: 'control + v'
     7. Now open the Anki
     8. Click import on the top right corner
     9. Find the .csv file in the folder you downloaded, and click on it
     10. Finally, set the type to 'Basic'(The result will be same as if they were Image Occlusion Cards)
     
-    
     Choose the Deck where you want this to live 
-    
     
     Find the 'Field Separator' and choose Commas 
     
