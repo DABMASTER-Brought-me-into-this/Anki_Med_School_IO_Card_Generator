@@ -87,9 +87,10 @@ with st.expander("How to import this into Anki?"):
     9. Find the .csv file in the folder you downloaded, and click on it
     10. Finally, set the type to 'Basic'(The result will be same as if they were Image Occlusion Cards)
     
-    Choose the Deck where you want this to live 
+        Choose the Deck where you want this to live 
     
-    Find the 'Field Separator' and choose Commas 
+        Find the 'Field Separator' and choose Commas 
+    
     
     
     
