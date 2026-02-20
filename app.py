@@ -57,7 +57,7 @@ if uploaded_file and api_key and st.button("Generate Deck"):
 
 # Instructions
 with st.expander("How to import this into Anki?"):
-    st.markdown(r"""
+    st.markdown("""
     1. Go to your download folder and unzip your file. The unzipped file should be a folder that contains text files, image files, and a csv. 
     2. If your file does not contain one of those items, refresh the website and recreate your zip file. 
     3. Select all the images in the folder, and press 
