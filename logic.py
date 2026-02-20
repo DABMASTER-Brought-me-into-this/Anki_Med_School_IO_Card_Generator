@@ -50,8 +50,6 @@ def io_generate(input_filename, output_filename, results, temp_dir):
         cv2.imwrite(os.path.join(temp_dir, f'covered_image{count}.png'), image)
         print("Text covered successfully.")
 
-    # Give Time For Directory Adjust
-    time.sleep(0.5)
 
     original_image = cv2.imread(os.path.join(temp_dir, f'covered_image{count}.png'))
     for result in results:
@@ -95,10 +93,10 @@ def standard_generate(input_filename, output_filename, slide_text, temp_dir):
     return output_filename + 1
 
 
-def groq_preprocessing_tool(similar_image_group, slide_deck_name):
+def groq_preprocessing_tool(similar_image_group, slide_deck_name, groq_api):
     # Connecting To Groq
     client = Groq(
-        api_key=os.environ.get("GROQ_API_KEY")
+        api_key=groq_api
     )
 
     def default_keep_all():
@@ -192,7 +190,7 @@ def similarity_images(image1, image2):
         return False
 
 
-def pre_processing_prune(slide_deck_name, temp_dir):
+def pre_processing_prune(slide_deck_name, temp_dir, groq_api):
     search_pattern = os.path.join(temp_dir, "image*.png")
     image_files = glob.glob(search_pattern)
     image_files.sort(key=lambda f: int(re.search(r'\d+', os.path.basename(f)).group()))
@@ -228,7 +226,7 @@ def pre_processing_prune(slide_deck_name, temp_dir):
                 if combination[1] not in similar_images: similar_images.append(combination[1])
 
         if len(similar_images) >= 2:
-            decisions = groq_preprocessing_tool(similar_images, slide_deck_name)
+            decisions = groq_preprocessing_tool(similar_images, slide_deck_name, groq_api)
             for key, value in decisions.items():
                 if value == "delete": orphans_to_delete.append(key)
 
@@ -239,7 +237,7 @@ def pre_processing_prune(slide_deck_name, temp_dir):
             pass
 
 
-def post_processing_prune(slide_deck_name, temp_dir):
+def post_processing_prune(slide_deck_name, temp_dir, groq_api):
     search_pattern = os.path.join(temp_dir, "answer*.txt")
     answer_files = glob.glob(search_pattern)
     answer_files.sort(key=lambda f: int(re.search(r'\d+', os.path.basename(f)).group()))
@@ -281,7 +279,7 @@ def post_processing_prune(slide_deck_name, temp_dir):
     for i in range(0, len(final_image_list), batch_size):
         batch = final_image_list[i: i + batch_size]
         print(f" -> Pruning Batch {i // batch_size + 1}: Checking {len(batch)} images...")
-        batch_results = groq_pruning_tool(batch, slide_deck_name)
+        batch_results = groq_pruning_tool(batch, slide_deck_name, groq_api)
         pruning_decisions.update(batch_results)
 
     for key, value in pruning_decisions.items():
@@ -295,8 +293,8 @@ def post_processing_prune(slide_deck_name, temp_dir):
                 pass
 
 
-def groq_pruning_tool(file_paths, slide_deck_name):
-    client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
+def groq_pruning_tool(file_paths, slide_deck_name, groq_api):
+    client = Groq(api_key=groq_api)
     content_payload = [
         {
             "type": "text",
@@ -365,7 +363,7 @@ def groq_pruning_tool(file_paths, slide_deck_name):
 
 
 # Slide to Text
-def run_pipeline(presentation_name, start_counter, temp_dir):
+def run_pipeline(presentation_name, start_counter, temp_dir, groq_api):
     print("Starting Code")
     start_time = time.perf_counter()
     prs = pptx.Presentation(os.path.join(temp_dir, presentation_name))
@@ -396,7 +394,6 @@ def run_pipeline(presentation_name, start_counter, temp_dir):
                         img = Image.open(im_stream)
                         img.save(im_filename, format='PNG')
 
-                    time.sleep(1)
                     print("Storing Text")
                     slide_text = ""
                     for shape1 in slide.shapes:
@@ -409,7 +406,7 @@ def run_pipeline(presentation_name, start_counter, temp_dir):
                 counter += 1
 
     print("Pre-processing")
-    pre_processing_prune(presentation_name, temp_dir)
+    pre_processing_prune(presentation_name, temp_dir, groq_api)
 
     search_pattern = os.path.join(temp_dir, "image*.png")
     image_list = glob.glob(search_pattern)
@@ -452,7 +449,7 @@ def run_pipeline(presentation_name, start_counter, temp_dir):
                 pass
 
     print("Post Processing")
-    post_processing_prune(presentation_name, temp_dir)
+    post_processing_prune(presentation_name, temp_dir, groq_api)
     print(f"The slide_to_text took {time.perf_counter() - start_time} seconds.")
 
 
