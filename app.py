@@ -18,7 +18,7 @@ csv_name = st.text_input("Desired CSV Name", value="deck")
 if uploaded_file and api_key and st.button("Generate Deck"):
 
     # Set the API Key for the logic file to use
-    os.environ["GROQ_API_KEY"] = api_key
+    groq_api = api_key
 
     with st.spinner("Processing... This may take a few minutes."):
         # Create a temporary directory (The "Virtual Folder")
@@ -31,7 +31,7 @@ if uploaded_file and api_key and st.button("Generate Deck"):
 
             try:
                 # Run the Pipeline
-                logic.run_pipeline(uploaded_file.name, start_counter, temp_dir)
+                logic.run_pipeline(uploaded_file.name, start_counter, temp_dir, groq_api)
 
                 # Run the Formatting
                 final_csv = logic.create_csv_file(csv_name, temp_dir)
@@ -53,3 +53,4 @@ if uploaded_file and api_key and st.button("Generate Deck"):
 
             except Exception as e:
                 st.error(f"An error occurred: {e}")
+
