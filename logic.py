@@ -501,5 +501,11 @@ def create_csv_file(csv_name, temp_dir):
         with open(os.path.join(temp_dir, csv_name), 'w', newline='', encoding='utf-8') as csvfile:
             writer = csv.writer(csvfile)
             writer.writerows(csv_rows)
+
+        for txt_file in answer_files:
+            try:
+                os.remove(txt_file)
+            except Exception:
+                pass
         return csv_name
     return None
