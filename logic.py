@@ -261,7 +261,7 @@ def post_processing_prune(slide_deck_name, temp_dir, groq_api):
                             "all rights reserved", "conflict of interest", "disclosures", "financial disclosure",
                             "no disclosures", "summary", "conclusion", "recap", "take home points", "key takeaways",
                             "take-away", "in summary", "to summarize", "click to add title", "click to add text",
-                            "slide number"]
+                            "slide number", "", " "]
                 content = txt_file.read().lower()
                 for keyword in keywords:
                     if keyword in content: bad_card = True
