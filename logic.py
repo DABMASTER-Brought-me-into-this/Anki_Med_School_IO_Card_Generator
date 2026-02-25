@@ -112,6 +112,8 @@ def groq_preprocessing_tool(similar_image_group, slide_deck_name, groq_api):
             TASK: The user has identified the following {len(similar_image_group)} images as DUPLICATES or variants of the same slide.
             You must decide which image is the 'Best Version' to keep.
 
+            CRITICAL INSTRUCTION: You MUST use the EXACT "Image Filename" provided in the text above each image as the JSON key. DO NOT invent or sequentially number filenames (e.g., never use "slide1.png" or "image1.png").
+
             CRITERIA FOR 'keep':
             1. HIGHEST RESOLUTION: Prefer sharp, clear text.
             2. DIAGNOSTIC VALUE: Prefer images with CLEAR labels/arrows pointing to anatomy.
@@ -125,8 +127,8 @@ def groq_preprocessing_tool(similar_image_group, slide_deck_name, groq_api):
             Return ONLY a valid JSON object mapping filenames to 'keep' or 'delete'.
             Example format:
             {{
-                "covered_image1.png": "keep",
-                "covered_image2.png": "delete"
+                "image42.png": "keep",
+                "image108.png": "delete"
             }}
             """
         }
@@ -304,6 +306,8 @@ def groq_pruning_tool(file_paths, slide_deck_name, groq_api):
 
                 Your Task: Review each image and assign it one of two statuses: 'Delete' or 'Pass'.
 
+                CRITICAL INSTRUCTION: You MUST use the EXACT "Image Filename" provided in the text above each image as the JSON key. DO NOT invent or sequentially number filenames (e.g., never use "slide1.png").
+
                 CRITERIA FOR 'Delete' (Be aggressive):
                 1. Irrelevant: Comic strips, cartoons, "Questions?" slides, "Thank You" slides, or generic stock photos of people.
                 2. Duplicates: If two images IN THIS LIST are effectively the same content, mark the lower-quality one as Delete.
@@ -316,9 +320,9 @@ def groq_pruning_tool(file_paths, slide_deck_name, groq_api):
                 Return ONLY a valid JSON object.
                 Example format:
                 {{
-                    "image1.png": "Pass",
-                    "image2.png": "Delete",
-                    "image3.png": "Delete"
+                    "covered_image14.png": "Pass",
+                    "covered_image57.png": "Delete",
+                    "covered_image92.png": "Delete"
                 }}
                 """
         }
@@ -386,7 +390,7 @@ def run_pipeline(presentation_name, start_counter, temp_dir, groq_api):
                 print("Storing Image")
                 try:
                     if 'wmf' in im.content_type or 'emf' in im.content_type:
-                        with WandImage(blob=im_byte) as vector_img:
+                        with WandImage(blob=im_byte, resolution = 300) as vector_img:
                             vector_img.background_color = Color('white')
                             vector_img.format = 'png'
                             vector_img.save(filename=im_filename)
@@ -425,7 +429,7 @@ def run_pipeline(presentation_name, start_counter, temp_dir, groq_api):
             for detection in results:
                 text = detection[1]
                 confidence = detection[2]
-                if re.search('[a-zA-Z]', text) and confidence > 0.6:
+                if re.search('[a-zA-Z]', text) and confidence > 0.4:
                     is_valid_io_card = True
                     break
 
