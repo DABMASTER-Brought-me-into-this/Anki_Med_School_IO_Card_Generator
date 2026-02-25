@@ -312,12 +312,12 @@ def groq_pruning_tool(file_paths, slide_deck_name, groq_api):
 
                 CRITERIA FOR 'Delete' (Be aggressive):
                 1. Irrelevant: Comic strips, cartoons, "Questions?" slides, "Thank You" slides, or generic stock photos of people.
-                2. Duplicates: If two images IN THIS LIST are effectively the same content, mark the lower-quality one as Delete.
-                3. Nonsense: The image is too blurry to read, contains only a slide number/header, or is a corrupted visual artifact.
-                4. Formatting Artifacts: Images that are just lines, background textures, or company logos.
+                2. Nonsense: The image is too blurry to read, contains only a slide number/header, or is a corrupted visual artifact.
+                3. Formatting Artifacts: Images that are just lines, background textures, or company logos.
 
                 CRITERIA FOR 'Pass':
                 1. Medical Content: Contains anatomy, histology, charts, text definitions, or clinical photos.
+                *SPECIAL RULE FOR PASS*: You will see multiple images that look identical but have different blue and green boxes drawn on them. THESE ARE INTENTIONAL FLASHCARDS. Do NOT mark them as 'Delete' just because they look similar to each other. If the underlying image is medical, you must 'Pass' all of them.
 
                 Return ONLY a valid JSON object.
                 Example format:
@@ -359,7 +359,9 @@ def groq_pruning_tool(file_paths, slide_deck_name, groq_api):
         if start_index != -1 and end_index != -1:
             clean_json_string = response_content[start_index: end_index + 1]
             try:
-                return json.loads(clean_json_string)
+                decision_data = json.loads(clean_json_string)
+                print(f"Pruning Batch Decision: {decision_data}")  # <--- ADD THIS BACK
+                return decision_data
             except json.JSONDecodeError:
                 return {name: "Pass" for name in valid_filenames}
         else:
