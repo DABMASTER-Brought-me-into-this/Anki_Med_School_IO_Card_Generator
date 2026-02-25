@@ -265,6 +265,8 @@ def post_processing_prune(slide_deck_name, temp_dir, groq_api):
                 content = txt_file.read().lower()
                 for keyword in keywords:
                     if keyword in content: bad_card = True
+                if not content:
+                    bad_card = True
 
             if bad_card:
                 os.remove(file)
