@@ -105,7 +105,7 @@ def io_generate(input_filename, output_filename, results, temp_dir):
         current_card = base_image.copy()
 
         # Covering the text
-        cv2.fillPoly(current_card, [np.array(c).reshape((-1, 1, 2)) for c in close_cord], color=[0, 255, 0])
+        cv2.fillPoly(current_card, [np.array(c, dtype=np.int32).reshape((-1, 1, 2)) for c in close_cord], color=[0, 255, 0])
         cv2.imwrite(os.path.join(temp_dir, f'covered_image{count}.png'), current_card)
         print("Multi-cover Card Created")
 
@@ -120,7 +120,7 @@ def io_generate(input_filename, output_filename, results, temp_dir):
         current_card = base_image.copy()
 
         # Covering the text
-        cv2.fillPoly(current_card, [np.array(single).reshape((-1, 1, 2))], color=[0, 255, 0])
+        cv2.fillPoly(current_card, [np.array(single, dtype=np.int32).reshape((-1, 1, 2))], color=[0, 255, 0])
         cv2.imwrite(os.path.join(temp_dir, f'covered_image{count}.png'), current_card)
         print("Single cover Card Created.")
 
