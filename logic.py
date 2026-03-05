@@ -24,53 +24,109 @@ import csv
 def io_generate(input_filename, output_filename, results, temp_dir):
     pathway = os.path.join(temp_dir, f"image{input_filename}.png")
 
-    # Allow CV2 to load it
-    image = cv2.imread(pathway)
+    # Load Image
+    base_image = cv2.imread(pathway)
 
+    # Retrieving File Name
     count = output_filename
+    label_id = output_filename  # Separate counter for the blue box labels
+
+    # Covering Up The Text
+    all_cords = []
     for result in results:
         # Cords
         cords = result[0]
+        all_cords.append(cords)
 
         # Reshaping Cords to Numpy Array
         all_text_points = np.array(cords, dtype=np.int32)
         all_text_points = all_text_points.reshape((-1, 1, 2))
 
-        cv2.fillPoly(image, [all_text_points], color=(255, 0, 0))
+        # Cover All Boxes
+        cv2.fillPoly(base_image, [all_text_points], color=(255, 0, 0))
         cv2.putText(
-            image,  # Image
-            str(count),  # Label
+            base_image,  # Image
+            str(label_id),  # Label
             (int(cords[0][0]), int(cords[0][1]) + 20),  # Cords
             cv2.FONT_HERSHEY_SIMPLEX,  # Font
             1.0,  # Font Size
             (255, 255, 255),  # Font Color
             2  # Font Thickness
         )
-
-        cv2.imwrite(os.path.join(temp_dir, f'covered_image{count}.png'), image)
+        label_id += 1  # Increment the label on the blue boxes
         print("Text covered successfully.")
 
+    # Getting All Cord Combinations
+    close_cords = []
+    all_close_cords = []
 
-    original_image = cv2.imread(os.path.join(temp_dir, f'covered_image{count}.png'))
-    for result in results:
-        # Make a copy of Image
-        current_card = original_image.copy()
+    for index, cords in enumerate(all_cords):
+        # Skip if this box is already part of a grouped list
+        if cords in all_close_cords:
+            continue
 
-        # Cords & Text
-        cords = result[0]
-        text = result[1]
+        close_cord = [cords]
+        for x in range(index + 1, len(all_cords)):  # Add + 1 to prevent self-looping
+            distance_func = lambda x1, y1, x2, y2: ((x1 - x2) ** 2 + (y1 - y2) ** 2) ** 0.5
 
-        # Writing the covered text to a text file
-        with open(os.path.join(temp_dir, f"answer{count}.txt"), 'a') as file:
-            file.write(f"{text}")
+            # FIX 2: Check Top-Right corner of Box A to Top-Left corner of Box B
+            if distance_func(cords[1][0], cords[1][1], all_cords[x][0][0], all_cords[x][0][1]) < 40:
+                close_cord.append(all_cords[x])
+                all_close_cords.append(all_cords[x])
 
-        # Reshaping Cords to Numpy Array
-        all_text_points = np.array(cords, dtype=np.int32)
-        all_text_points = all_text_points.reshape((-1, 1, 2))
+        # If neighbors were found, add the group and mark the base cord as grouped
+        if len(close_cord) > 1:
+            close_cords.append(close_cord)
+            all_close_cords.append(cords)
 
-        cv2.fillPoly(current_card, [all_text_points], color=(0, 255, 0))
+    # Subtracting lists ish
+    singles = [ele for ele in all_cords if ele not in all_close_cords]
+
+    # Finding the text for each
+    group_text = []
+    for close_cord in close_cords:
+        card = ""
+        for cord in close_cord:
+            for result in results:
+                if cord == result[0]:
+                    card += result[1] + " "
+        group_text.append(card)
+
+    # Singles
+    single_text = []
+    for cord in singles:
+        for result in results:
+            if cord == result[0]:
+                single_text.append(result[1])
+
+    # Making Group Box Cards First
+    for index, close_cord in enumerate(close_cords):
+        # Creating a Copy of the Card in RAM
+        current_card = base_image.copy()
+
+        # Covering the text
+        cv2.fillPoly(current_card, [np.array(c).reshape((-1, 1, 2)) for c in close_cord], color=[0, 255, 0])
         cv2.imwrite(os.path.join(temp_dir, f'covered_image{count}.png'), current_card)
-        print("Text covered successfully.")
+        print("Multi-cover Card Created")
+
+        # Writing the Answer
+        with open(os.path.join(temp_dir, f"answer{count}.txt"), 'a') as file:
+            file.write(group_text[index])
+
+        count += 1
+
+    # Making Single Cards
+    for index, single in enumerate(singles):
+        current_card = base_image.copy()
+
+        # Covering the text
+        cv2.fillPoly(current_card, [np.array(single).reshape((-1, 1, 2))], color=[0, 255, 0])
+        cv2.imwrite(os.path.join(temp_dir, f'covered_image{count}.png'), current_card)
+        print("Single cover Card Created.")
+
+        # Writing the Answer
+        with open(os.path.join(temp_dir, f"answer{count}.txt"), 'a') as file:
+            file.write(single_text[index])
 
         count += 1
 
