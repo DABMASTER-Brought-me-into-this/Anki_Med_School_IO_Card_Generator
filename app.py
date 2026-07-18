@@ -7,6 +7,7 @@ import logic
 
 print("Code Running")
 st.title("MedSchool IO Card Anki Generator")
+st.markdown("Visit The Improved Version: https://neurolearnapp.streamlit.app/")
 
 # Inputs
 api_key = st.text_input("Groq API Key", type="password")
